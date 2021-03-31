@@ -20,9 +20,20 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/take_picture"
-            app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintRight_toRightOf="parent" />
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintRight_toLeftOf="@id/btn_change_camera" />
+
+        <Button
+            android:id="@+id/btn_change_camera"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/change_camera"
+            android:layout_marginTop="5dp"
+            android:layout_marginRight="5dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintLeft_toRightOf="@id/btn_picture" />
 
         <androidx.camera.view.PreviewView
             android:id="@+id/view_finder"
