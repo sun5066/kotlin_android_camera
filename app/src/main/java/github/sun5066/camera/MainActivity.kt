@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.util.Log
 import android.widget.Toast
+import androidx.annotation.LayoutRes
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.Preview
@@ -31,6 +32,7 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
 
     private val mViewModel: MainViewModel by lazy { ViewModelProvider(this).get(MainViewModel::class.java) }
 
+    @LayoutRes
     override fun getLayoutResourceId(): Int = R.layout.activity_main
 
     override fun initDataBinding() {
