@@ -32,12 +32,12 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
     }
 
     private var mImageCapture: ImageCapture? = null
+    private var mCameraSelector: Int = CameraSelector.LENS_FACING_BACK
     private lateinit var mVideoCapture: VideoCapture
-    private lateinit var mCameraSelector: CameraSelector
     private lateinit var mOutputDirectory: File
     private lateinit var mCameraExecutor: ExecutorService
-
-    private var isFrontCamera = true
+    private lateinit var mCameraProvider: ProcessCameraProvider
+    private val mCameraProviderFuture by lazy { ProcessCameraProvider.getInstance(this) }
 
     private val mViewModel: MainViewModel by lazy { ViewModelProvider(this).get(MainViewModel::class.java) }
 
@@ -50,8 +50,7 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
     }
 
     override fun initView() {
-        mCameraSelector = CameraSelector.DEFAULT_FRONT_CAMERA
-        if (allPermissionsGranted()) this.startCamera()
+        if (allPermissionsGranted()) this.setupCamera()
         else ActivityCompat.requestPermissions(this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS)
 
         mOutputDirectory = getOutputDirectory()
@@ -61,13 +60,11 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
         }
 
         mBinding.btnChangeCamera.setOnClickListener {
-            mCameraSelector =
-                if (isFrontCamera) CameraSelector.DEFAULT_BACK_CAMERA
-                else CameraSelector.DEFAULT_FRONT_CAMERA
-
-            isFrontCamera = !isFrontCamera
             mCameraExecutor.shutdown()
-            startCamera()
+            mCameraSelector =
+                if (CameraSelector.LENS_FACING_BACK == mCameraSelector) CameraSelector.LENS_FACING_FRONT
+                else CameraSelector.LENS_FACING_BACK
+            this.bindCamera()
         }
     }
 
@@ -91,34 +88,32 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
                     exception.printStackTrace()
                 }
             })
-
-
     }
 
-    private fun imageCapture() {
+    private fun setupCamera() {
+        mCameraProviderFuture.addListener(Runnable {
+            mCameraProvider = mCameraProviderFuture.get()
 
-    }
-
-    private fun startCamera() {
-        val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
-
-        cameraProviderFuture.addListener(Runnable {
-            val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
-            val preview = Preview.Builder()
-                .build()
-                .also {
-                    it.setSurfaceProvider(mBinding.viewFinder.createSurfaceProvider())
-                }
-
-            mImageCapture = ImageCapture.Builder().build()
-
-            try {
-                cameraProvider.unbindAll()
-                cameraProvider.bindToLifecycle(this, mCameraSelector, preview, mImageCapture)
-            } catch (e: Exception) {
-                Log.e(TAG, "${e.message}")
-            }
+            this.bindCamera()
         }, ContextCompat.getMainExecutor(this))
+    }
+
+    private fun bindCamera() {
+        val preview = Preview.Builder()
+            .build()
+            .also {
+                it.setSurfaceProvider(mBinding.viewFinder.createSurfaceProvider())
+            }
+
+        val cameraSelector = CameraSelector.Builder().requireLensFacing(mCameraSelector).build()
+        mImageCapture = ImageCapture.Builder().build()
+        mCameraProvider.unbindAll()
+
+        try {
+            mCameraProvider.bindToLifecycle(this, cameraSelector, preview, mImageCapture)
+        } catch (e: Exception) {
+            Log.e(TAG, "${e.message}")
+        }
     }
 
     private fun allPermissionsGranted(): Boolean = REQUIRED_PERMISSIONS.all {
@@ -138,14 +133,10 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
         mCameraExecutor.shutdown()
     }
 
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
 
-        if (requestCode == REQUEST_CODE_PERMISSIONS) startCamera()
+        if (requestCode == REQUEST_CODE_PERMISSIONS) this.setupCamera()
         else {
             Toast.makeText(this, "권한이 필요합니다.", Toast.LENGTH_SHORT).show()
             finish()
