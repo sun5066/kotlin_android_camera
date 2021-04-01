@@ -18,6 +18,7 @@ import java.util.*
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
+// 그냥주석
 class MainActivity : BaseActivity<ActivityMainBinding>() {
 
     interface ClickListener {
